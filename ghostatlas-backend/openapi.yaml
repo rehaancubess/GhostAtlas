@@ -1,0 +1,913 @@
+openapi: 3.0.3
+info:
+  title: GhostAtlas Backend API
+  description: |
+    The GhostAtlas Backend API provides serverless endpoints for the GhostAtlas mobile application.
+    
+    This API enables users to:
+    - Submit paranormal encounter stories with location data and images
+    - Query approved encounters near their location
+    - Rate and verify encounters
+    - Access AI-enhanced content (horror narratives, illustrations, voice narration)
+    
+    Administrators can:
+    - Review pending encounter submissions
+    - Approve or reject encounters
+    - Trigger AI enhancement pipeline
+    
+    ## Authentication
+    
+    This API does not require authentication for public endpoints. Rate limiting is enforced at 100 requests per minute per IP address.
+    
+    ## Rate Limiting
+    
+    All endpoints are rate-limited to 100 requests per minute per IP address. When the limit is exceeded, the API returns HTTP 429 with a `Retry-After` header.
+    
+    ## Error Responses
+    
+    All errors follow a standardized format:
+    ```json
+    {
+      "errorCode": "ERROR_CODE",
+      "message": "Human-readable error message",
+      "timestamp": "2024-01-15T10:30:00Z",
+      "requestId": "abc123-def456"
+    }
+    ```
+  version: 1.0.0
+  contact:
+    name: GhostAtlas API Support
+    email: support@ghostatlas.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.ghostatlas.com
+    description: Production server
+  - url: https://api-staging.ghostatlas.com
+    description: Staging server
+  - url: https://api-dev.ghostatlas.com
+    description: Development server
+
+tags:
+  - name: Encounters
+    description: Operations for submitting and retrieving paranormal encounters
+  - name: Ratings
+    description: Operations for rating encounters
+  - name: Verifications
+    description: Operations for verifying encounter locations
+  - name: Admin
+    description: Administrative operations for reviewing and managing encounters
+
+paths:
+  /api/encounters:
+    post:
+      tags:
+        - Encounters
+      summary: Submit a new paranormal encounter
+      description: |
+        Submit a new paranormal encounter story with location data. The encounter will be stored with status "pending" and await admin approval.
+        
+        After submission, use the returned presigned URLs to upload images directly to S3.
+      operationId: submitEncounter
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EncounterSubmission'
+            examples:
+              basic:
+                summary: Basic encounter without images
+                value:
+                  authorName: "John Doe"
+                  location:
+                    latitude: 37.7749
+                    longitude: -122.4194
+                    address: "123 Haunted St, San Francisco, CA"
+                  originalStory: "I was walking through the old cemetery at midnight when I heard footsteps behind me..."
+                  encounterTime: "2024-01-15T00:30:00Z"
+                  imageCount: 0
+              withImages:
+                summary: Encounter with images
+                value:
+                  authorName: "Jane Smith"
+                  location:
+                    latitude: 40.7128
+                    longitude: -74.0060
+                  originalStory: "A shadowy figure appeared in my bedroom mirror..."
+                  encounterTime: "2024-01-14T03:15:00Z"
+                  imageCount: 2
+      responses:
+        '200':
+          description: Encounter submitted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EncounterSubmissionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    
+    get:
+      tags:
+        - Encounters
+      summary: List approved encounters near a location
+      description: |
+        Retrieve approved paranormal encounters within a specified radius of the given coordinates.
+        Results are sorted by distance from the query location.
+      operationId: getEncounters
+      parameters:
+        - name: latitude
+          in: query
+          required: true
+          description: Latitude of the query location (-90 to 90)
+          schema:
+            type: number
+            format: double
+            minimum: -90
+            maximum: 90
+          example: 37.7749
+        - name: longitude
+          in: query
+          required: true
+          description: Longitude of the query location (-180 to 180)
+          schema:
+            type: number
+            format: double
+            minimum: -180
+            maximum: 180
+          example: -122.4194
+        - name: radius
+          in: query
+          required: false
+          description: Search radius in kilometers (default 50km, max 100km)
+          schema:
+            type: number
+            format: double
+            default: 50
+            minimum: 1
+            maximum: 100
+          example: 25
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of results to return (default 100, max 500)
+          schema:
+            type: integer
+            default: 100
+            minimum: 1
+            maximum: 500
+          example: 50
+      responses:
+        '200':
+          description: List of encounters retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EncounterListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/encounters/{id}:
+    get:
+      tags:
+        - Encounters
+      summary: Get detailed encounter information
+      description: |
+        Retrieve complete details for a specific encounter, including AI-enhanced content, verifications, and ratings.
+        Only approved encounters can be accessed via this endpoint.
+      operationId: getEncounterById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Unique encounter identifier (ULID)
+          schema:
+            type: string
+          example: "01HQZX8K9M7N6P5Q4R3S2T1V0W"
+      responses:
+        '200':
+          description: Encounter details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EncounterDetail'
+        '403':
+          description: Encounter is not approved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                errorCode: "FORBIDDEN"
+                message: "This encounter is not approved for public viewing"
+                timestamp: "2024-01-15T10:30:00Z"
+                requestId: "abc123-def456"
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/encounters/{id}/rate:
+    post:
+      tags:
+        - Ratings
+      summary: Rate an encounter
+      description: |
+        Submit a rating (1-5) for an encounter. Each device can only rate an encounter once.
+        Duplicate ratings from the same device will be rejected.
+      operationId: rateEncounter
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Unique encounter identifier (ULID)
+          schema:
+            type: string
+          example: "01HQZX8K9M7N6P5Q4R3S2T1V0W"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RatingSubmission'
+            example:
+              deviceId: "550e8400-e29b-41d4-a716-446655440000"
+              rating: 5
+      responses:
+        '200':
+          description: Rating submitted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RatingResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Device has already rated this encounter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                errorCode: "DUPLICATE_RATING"
+                message: "Already rated"
+                timestamp: "2024-01-15T10:30:00Z"
+                requestId: "abc123-def456"
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/encounters/{id}/verify:
+    post:
+      tags:
+        - Verifications
+      summary: Verify an encounter location
+      description: |
+        Submit a location verification by checking in at the encounter location.
+        Verifications must be within 100 meters of the original encounter location.
+        The system will determine if the verification time matches the encounter's time of day (±2 hours).
+      operationId: verifyLocation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Unique encounter identifier (ULID)
+          schema:
+            type: string
+          example: "01HQZX8K9M7N6P5Q4R3S2T1V0W"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerificationSubmission'
+            example:
+              location:
+                latitude: 37.7749
+                longitude: -122.4194
+              spookinessScore: 4
+              notes: "Felt a cold presence near the old oak tree"
+      responses:
+        '200':
+          description: Verification submitted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerificationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/admin/encounters:
+    get:
+      tags:
+        - Admin
+      summary: List pending encounters for review
+      description: |
+        Retrieve all encounters with status "pending" for administrative review.
+        Results are sorted by submission time (newest first) and support pagination.
+      operationId: adminListPending
+      parameters:
+        - name: nextToken
+          in: query
+          required: false
+          description: Pagination token from previous response
+          schema:
+            type: string
+          example: "eyJsYXN0RXZhbHVhdGVkS2V5Ijp7ImlkIjoiMDFIUVpYOEs5TTdONlA1UTRSM1MyVDFWMFcifX0="
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of results per page (default 20, max 100)
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+          example: 20
+      responses:
+        '200':
+          description: List of pending encounters retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminEncounterListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/admin/encounters/{id}/approve:
+    put:
+      tags:
+        - Admin
+      summary: Approve an encounter
+      description: |
+        Approve a pending encounter for publication. This will:
+        1. Update the encounter status to "approved"
+        2. Trigger the AI enhancement pipeline
+        3. Generate horror narrative, illustration, and voice narration
+      operationId: adminApprove
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Unique encounter identifier (ULID)
+          schema:
+            type: string
+          example: "01HQZX8K9M7N6P5Q4R3S2T1V0W"
+      responses:
+        '200':
+          description: Encounter approved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminActionResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/admin/encounters/{id}/reject:
+    put:
+      tags:
+        - Admin
+      summary: Reject an encounter
+      description: |
+        Reject a pending encounter. The encounter will not be published and will not trigger the AI enhancement pipeline.
+        Rejected encounters are retained for audit purposes but excluded from public queries.
+      operationId: adminReject
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Unique encounter identifier (ULID)
+          schema:
+            type: string
+          example: "01HQZX8K9M7N6P5Q4R3S2T1V0W"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  description: Optional reason for rejection
+                  maxLength: 500
+                  example: "Content does not meet quality standards"
+      responses:
+        '200':
+          description: Encounter rejected successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminActionResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  schemas:
+    Location:
+      type: object
+      required:
+        - latitude
+        - longitude
+      properties:
+        latitude:
+          type: number
+          format: double
+          minimum: -90
+          maximum: 90
+          description: Latitude coordinate
+          example: 37.7749
+        longitude:
+          type: number
+          format: double
+          minimum: -180
+          maximum: 180
+          description: Longitude coordinate
+          example: -122.4194
+        address:
+          type: string
+          maxLength: 200
+          description: Optional human-readable address
+          example: "123 Haunted St, San Francisco, CA"
+
+    EncounterSubmission:
+      type: object
+      required:
+        - authorName
+        - location
+        - originalStory
+        - encounterTime
+        - imageCount
+      properties:
+        authorName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Name of the person submitting the encounter
+          example: "John Doe"
+        location:
+          $ref: '#/components/schemas/Location'
+        originalStory:
+          type: string
+          minLength: 10
+          maxLength: 5000
+          description: The paranormal encounter story
+          example: "I was walking through the old cemetery at midnight when I heard footsteps behind me..."
+        encounterTime:
+          type: string
+          format: date-time
+          description: When the encounter occurred (ISO 8601 format)
+          example: "2024-01-15T00:30:00Z"
+        imageCount:
+          type: integer
+          minimum: 0
+          maximum: 5
+          description: Number of images to upload (0-5)
+          example: 2
+
+    EncounterSubmissionResponse:
+      type: object
+      required:
+        - encounterId
+        - uploadUrls
+      properties:
+        encounterId:
+          type: string
+          description: Unique identifier for the submitted encounter (ULID)
+          example: "01HQZX8K9M7N6P5Q4R3S2T1V0W"
+        uploadUrls:
+          type: array
+          items:
+            type: string
+            format: uri
+          description: Presigned S3 URLs for image uploads (valid for 15 minutes)
+          example:
+            - "https://ghostatlas-media.s3.amazonaws.com/encounters/01HQZX8K9M7N6P5Q4R3S2T1V0W/images/1705305000-photo1.jpg?X-Amz-Algorithm=..."
+            - "https://ghostatlas-media.s3.amazonaws.com/encounters/01HQZX8K9M7N6P5Q4R3S2T1V0W/images/1705305000-photo2.jpg?X-Amz-Algorithm=..."
+
+    EncounterSummary:
+      type: object
+      required:
+        - id
+        - authorName
+        - location
+        - encounterTime
+        - rating
+        - verificationCount
+        - distance
+      properties:
+        id:
+          type: string
+          description: Unique encounter identifier (ULID)
+          example: "01HQZX8K9M7N6P5Q4R3S2T1V0W"
+        authorName:
+          type: string
+          example: "John Doe"
+        location:
+          $ref: '#/components/schemas/Location'
+        enhancedStory:
+          type: string
+          description: AI-enhanced horror narrative (truncated for list view)
+          example: "The cemetery gates creaked open as midnight struck..."
+        encounterTime:
+          type: string
+          format: date-time
+          example: "2024-01-15T00:30:00Z"
+        imageUrls:
+          type: array
+          items:
+            type: string
+            format: uri
+          description: CloudFront URLs for user-uploaded images
+          example:
+            - "https://cdn.ghostatlas.com/encounters/01HQZX8K9M7N6P5Q4R3S2T1V0W/images/1705305000-photo1.jpg"
+        illustrationUrl:
+          type: string
+          format: uri
+          nullable: true
+          description: CloudFront URL for AI-generated illustration
+          example: "https://cdn.ghostatlas.com/encounters/01HQZX8K9M7N6P5Q4R3S2T1V0W/illustration.png"
+        narrationUrl:
+          type: string
+          format: uri
+          nullable: true
+          description: CloudFront URL for AI-generated voice narration
+          example: "https://cdn.ghostatlas.com/encounters/01HQZX8K9M7N6P5Q4R3S2T1V0W/narration.mp3"
+        rating:
+          type: number
+          format: double
+          minimum: 1
+          maximum: 5
+          description: Average rating (1-5, rounded to 1 decimal place)
+          example: 4.3
+        ratingCount:
+          type: integer
+          minimum: 0
+          description: Total number of ratings
+          example: 127
+        verificationCount:
+          type: integer
+          minimum: 0
+          description: Number of location verifications
+          example: 15
+        distance:
+          type: number
+          format: double
+          description: Distance from query location in kilometers
+          example: 2.5
+
+    EncounterListResponse:
+      type: object
+      required:
+        - encounters
+        - count
+      properties:
+        encounters:
+          type: array
+          items:
+            $ref: '#/components/schemas/EncounterSummary'
+        count:
+          type: integer
+          description: Total number of encounters returned
+          example: 42
+
+    EncounterDetail:
+      allOf:
+        - $ref: '#/components/schemas/EncounterSummary'
+        - type: object
+          properties:
+            originalStory:
+              type: string
+              description: Original user-submitted story
+              example: "I was walking through the old cemetery at midnight..."
+            enhancedStory:
+              type: string
+              description: Full AI-enhanced horror narrative
+              example: "The cemetery gates creaked open as midnight struck. A cold wind swept through the ancient tombstones..."
+            verifications:
+              type: array
+              items:
+                $ref: '#/components/schemas/Verification'
+              description: List of location verifications
+            createdAt:
+              type: string
+              format: date-time
+              description: When the encounter was submitted
+              example: "2024-01-15T01:00:00Z"
+            updatedAt:
+              type: string
+              format: date-time
+              description: When the encounter was last updated
+              example: "2024-01-15T01:30:00Z"
+
+    Verification:
+      type: object
+      required:
+        - id
+        - location
+        - spookinessScore
+        - verifiedAt
+        - isTimeMatched
+        - distanceMeters
+      properties:
+        id:
+          type: string
+          description: Unique verification identifier (ULID)
+          example: "01HQZY9L0N8O7Q6R5S4T3U2V1X"
+        location:
+          $ref: '#/components/schemas/Location'
+        spookinessScore:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: User's spookiness rating at the location
+          example: 4
+        notes:
+          type: string
+          maxLength: 500
+          nullable: true
+          description: Optional verification notes
+          example: "Felt a cold presence near the old oak tree"
+        verifiedAt:
+          type: string
+          format: date-time
+          description: When the verification was submitted
+          example: "2024-01-16T00:45:00Z"
+        isTimeMatched:
+          type: boolean
+          description: Whether verification time matches encounter time of day (±2 hours)
+          example: true
+        distanceMeters:
+          type: number
+          format: double
+          description: Distance from original encounter location in meters
+          example: 45.7
+
+    RatingSubmission:
+      type: object
+      required:
+        - deviceId
+        - rating
+      properties:
+        deviceId:
+          type: string
+          format: uuid
+          description: Unique device identifier (UUID)
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: Rating value (1-5)
+          example: 5
+
+    RatingResponse:
+      type: object
+      required:
+        - averageRating
+        - ratingCount
+      properties:
+        averageRating:
+          type: number
+          format: double
+          minimum: 1
+          maximum: 5
+          description: Updated average rating (rounded to 1 decimal place)
+          example: 4.3
+        ratingCount:
+          type: integer
+          minimum: 1
+          description: Updated total number of ratings
+          example: 128
+
+    VerificationSubmission:
+      type: object
+      required:
+        - location
+        - spookinessScore
+      properties:
+        location:
+          $ref: '#/components/schemas/Location'
+        spookinessScore:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: Spookiness rating at the location (1-5)
+          example: 4
+        notes:
+          type: string
+          maxLength: 500
+          description: Optional verification notes
+          example: "Felt a cold presence near the old oak tree"
+
+    VerificationResponse:
+      type: object
+      required:
+        - verificationId
+        - isTimeMatched
+      properties:
+        verificationId:
+          type: string
+          description: Unique verification identifier (ULID)
+          example: "01HQZY9L0N8O7Q6R5S4T3U2V1X"
+        isTimeMatched:
+          type: boolean
+          description: Whether verification time matches encounter time of day (±2 hours)
+          example: true
+
+    AdminEncounterSummary:
+      type: object
+      required:
+        - id
+        - authorName
+        - location
+        - originalStory
+        - encounterTime
+        - imageUrls
+        - createdAt
+      properties:
+        id:
+          type: string
+          description: Unique encounter identifier (ULID)
+          example: "01HQZX8K9M7N6P5Q4R3S2T1V0W"
+        authorName:
+          type: string
+          example: "John Doe"
+        location:
+          $ref: '#/components/schemas/Location'
+        originalStory:
+          type: string
+          description: Original user-submitted story
+          example: "I was walking through the old cemetery at midnight..."
+        encounterTime:
+          type: string
+          format: date-time
+          example: "2024-01-15T00:30:00Z"
+        imageUrls:
+          type: array
+          items:
+            type: string
+            format: uri
+          description: CloudFront URLs for user-uploaded images
+          example:
+            - "https://cdn.ghostatlas.com/encounters/01HQZX8K9M7N6P5Q4R3S2T1V0W/images/1705305000-photo1.jpg"
+        createdAt:
+          type: string
+          format: date-time
+          description: When the encounter was submitted
+          example: "2024-01-15T01:00:00Z"
+
+    AdminEncounterListResponse:
+      type: object
+      required:
+        - encounters
+      properties:
+        encounters:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminEncounterSummary'
+        nextToken:
+          type: string
+          nullable: true
+          description: Pagination token for next page (null if no more results)
+          example: "eyJsYXN0RXZhbHVhdGVkS2V5Ijp7ImlkIjoiMDFIUVpYOEs5TTdONlA1UTRSM1MyVDFWMFcifX0="
+
+    AdminActionResponse:
+      type: object
+      required:
+        - status
+        - encounterId
+      properties:
+        status:
+          type: string
+          enum: [approved, rejected]
+          description: Updated encounter status
+          example: "approved"
+        encounterId:
+          type: string
+          description: Unique encounter identifier (ULID)
+          example: "01HQZX8K9M7N6P5Q4R3S2T1V0W"
+
+    ErrorResponse:
+      type: object
+      required:
+        - errorCode
+        - message
+        - timestamp
+        - requestId
+      properties:
+        errorCode:
+          type: string
+          description: Machine-readable error code
+          example: "VALIDATION_ERROR"
+        message:
+          type: string
+          description: Human-readable error message
+          example: "Author name exceeds maximum length of 100 characters"
+        timestamp:
+          type: string
+          format: date-time
+          description: When the error occurred
+          example: "2024-01-15T10:30:00Z"
+        requestId:
+          type: string
+          description: Unique request identifier for tracing
+          example: "abc123-def456"
+
+  responses:
+    BadRequest:
+      description: Invalid request parameters or payload
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            validationError:
+              summary: Validation error
+              value:
+                errorCode: "VALIDATION_ERROR"
+                message: "Author name exceeds maximum length of 100 characters"
+                timestamp: "2024-01-15T10:30:00Z"
+                requestId: "abc123-def456"
+            invalidCoordinates:
+              summary: Invalid coordinates
+              value:
+                errorCode: "VALIDATION_ERROR"
+                message: "Latitude must be between -90 and 90 degrees"
+                timestamp: "2024-01-15T10:30:00Z"
+                requestId: "abc123-def456"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            errorCode: "NOT_FOUND"
+            message: "Encounter not found"
+            timestamp: "2024-01-15T10:30:00Z"
+            requestId: "abc123-def456"
+
+    TooManyRequests:
+      description: Rate limit exceeded
+      headers:
+        Retry-After:
+          description: Number of seconds to wait before retrying
+          schema:
+            type: integer
+          example: 60
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            errorCode: "RATE_LIMIT_EXCEEDED"
+            message: "Rate limit of 100 requests per minute exceeded"
+            timestamp: "2024-01-15T10:30:00Z"
+            requestId: "abc123-def456"
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            errorCode: "INTERNAL_ERROR"
+            message: "An unexpected error occurred"
+            timestamp: "2024-01-15T10:30:00Z"
+            requestId: "abc123-def456"

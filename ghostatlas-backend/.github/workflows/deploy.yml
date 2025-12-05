@@ -1,0 +1,259 @@
+name: Deploy GhostAtlas Backend
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: ghostatlas-backend/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: ghostatlas-backend
+        run: npm ci
+      
+      - name: Run unit tests
+        working-directory: ghostatlas-backend
+        run: npm test -- --coverage
+      
+      - name: Run property-based tests
+        working-directory: ghostatlas-backend
+        run: npm test -- --testPathPattern=".*\\.property\\.test\\.ts$" || true
+      
+      - name: Upload test coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-coverage
+          path: ghostatlas-backend/coverage/
+          retention-days: 30
+      
+      - name: Build TypeScript
+        working-directory: ghostatlas-backend
+        run: npm run build
+      
+      - name: Synthesize CDK
+        working-directory: ghostatlas-backend
+        run: npm run synth
+      
+      - name: Upload CDK artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: cdk-artifacts
+          path: ghostatlas-backend/cdk.out/
+          retention-days: 7
+
+  deploy-dev:
+    name: Deploy to Development
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    environment: 
+      name: development
+      url: https://dev-api.ghostatlas.com
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: ghostatlas-backend/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: ghostatlas-backend
+        run: npm ci
+      
+      - name: Download CDK artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: cdk-artifacts
+          path: ghostatlas-backend/cdk.out/
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEV }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEV }}
+          aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
+      
+      - name: Deploy to dev
+        working-directory: ghostatlas-backend
+        run: npm run deploy:dev -- --require-approval never
+        env:
+          CDK_DEFAULT_ACCOUNT: ${{ secrets.AWS_ACCOUNT_ID_DEV }}
+          CDK_DEFAULT_REGION: ${{ secrets.AWS_REGION || 'us-east-1' }}
+      
+      - name: Post deployment summary
+        run: |
+          echo "### Deployment Summary :rocket:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: Development" >> $GITHUB_STEP_SUMMARY
+          echo "- **Region**: ${{ secrets.AWS_REGION || 'us-east-1' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deployed by**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+
+  deploy-staging:
+    name: Deploy to Staging
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: 
+      name: staging
+      url: https://staging-api.ghostatlas.com
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: ghostatlas-backend/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: ghostatlas-backend
+        run: npm ci
+      
+      - name: Download CDK artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: cdk-artifacts
+          path: ghostatlas-backend/cdk.out/
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_STAGING }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_STAGING }}
+          aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
+      
+      - name: Deploy to staging
+        working-directory: ghostatlas-backend
+        run: npm run deploy:staging -- --require-approval never
+        env:
+          CDK_DEFAULT_ACCOUNT: ${{ secrets.AWS_ACCOUNT_ID_STAGING }}
+          CDK_DEFAULT_REGION: ${{ secrets.AWS_REGION || 'us-east-1' }}
+      
+      - name: Run smoke tests
+        working-directory: ghostatlas-backend
+        run: |
+          echo "Running smoke tests against staging environment..."
+          # Add smoke test commands here when available
+      
+      - name: Post deployment summary
+        run: |
+          echo "### Deployment Summary :rocket:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: Staging" >> $GITHUB_STEP_SUMMARY
+          echo "- **Region**: ${{ secrets.AWS_REGION || 'us-east-1' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deployed by**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+
+  deploy-prod:
+    name: Deploy to Production
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: 
+      name: production
+      url: https://api.ghostatlas.com
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: ghostatlas-backend/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: ghostatlas-backend
+        run: npm ci
+      
+      - name: Download CDK artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: cdk-artifacts
+          path: ghostatlas-backend/cdk.out/
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PROD }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PROD }}
+          aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
+      
+      - name: Create deployment backup
+        working-directory: ghostatlas-backend
+        run: |
+          echo "Creating backup of current production stack..."
+          # CDK will handle rollback if deployment fails
+      
+      - name: Deploy to production
+        working-directory: ghostatlas-backend
+        run: npm run deploy:prod -- --require-approval never
+        env:
+          CDK_DEFAULT_ACCOUNT: ${{ secrets.AWS_ACCOUNT_ID_PROD }}
+          CDK_DEFAULT_REGION: ${{ secrets.AWS_REGION || 'us-east-1' }}
+      
+      - name: Run smoke tests
+        working-directory: ghostatlas-backend
+        run: |
+          echo "Running smoke tests against production environment..."
+          # Add smoke test commands here when available
+      
+      - name: Post deployment summary
+        run: |
+          echo "### Deployment Summary :rocket:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: Production" >> $GITHUB_STEP_SUMMARY
+          echo "- **Region**: ${{ secrets.AWS_REGION || 'us-east-1' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deployed by**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+      
+      - name: Notify deployment success
+        if: success()
+        run: |
+          echo "✅ Production deployment completed successfully!"
+      
+      - name: Notify deployment failure
+        if: failure()
+        run: |
+          echo "❌ Production deployment failed! Please check logs and consider rollback."

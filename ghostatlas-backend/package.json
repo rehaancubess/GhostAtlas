@@ -1,0 +1,63 @@
+{
+  "name": "ghostatlas-backend",
+  "version": "1.0.0",
+  "description": "GhostAtlas AWS Backend - Serverless API infrastructure",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "cdk": "cdk",
+    "synth": "cdk synth",
+    "deploy": "cdk deploy",
+    "deploy:dev": "cdk deploy --context environment=dev",
+    "deploy:staging": "cdk deploy --context environment=staging",
+    "deploy:prod": "cdk deploy --context environment=prod",
+    "diff": "cdk diff",
+    "diff:dev": "cdk diff --context environment=dev",
+    "diff:staging": "cdk diff --context environment=staging",
+    "diff:prod": "cdk diff --context environment=prod",
+    "destroy": "cdk destroy",
+    "validate": "./scripts/validate-deployment.sh",
+    "validate:dev": "./scripts/validate-deployment.sh dev",
+    "validate:staging": "./scripts/validate-deployment.sh staging",
+    "validate:prod": "./scripts/validate-deployment.sh prod"
+  },
+  "keywords": [
+    "aws",
+    "cdk",
+    "serverless",
+    "lambda",
+    "dynamodb"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@aws-sdk/client-lambda": "^3.940.0",
+    "@types/aws-lambda": "^8.10.145",
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.11.30",
+    "aws-cdk": "^2.133.0",
+    "aws-sdk-client-mock": "^4.1.0",
+    "fast-check": "^3.17.1",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.3"
+  },
+  "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.540.0",
+    "@aws-sdk/client-dynamodb": "^3.540.0",
+    "@aws-sdk/client-polly": "^3.540.0",
+    "@aws-sdk/client-s3": "^3.540.0",
+    "@aws-sdk/client-sqs": "^3.540.0",
+    "@aws-sdk/lib-dynamodb": "^3.540.0",
+    "@aws-sdk/s3-request-presigner": "^3.540.0",
+    "aws-cdk-lib": "^2.133.0",
+    "constructs": "^10.3.0",
+    "source-map-support": "^0.5.21",
+    "ulid": "^2.3.0"
+  }
+}

@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GhostAtlas Theme Preview</title>
+    <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000000;
+            color: #E0E0E0;
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1, h2, h3 {
+            font-family: 'Creepster', cursive;
+            color: #00FF41;
+            text-shadow: 0 0 15px rgba(0, 255, 65, 0.5);
+            margin-bottom: 1rem;
+        }
+
+        h1 { font-size: 3rem; }
+        h2 { font-size: 2rem; margin-top: 3rem; }
+        h3 { font-size: 1.5rem; margin-top: 2rem; }
+
+        .red { color: #FF0040; text-shadow: 0 0 15px rgba(255, 0, 64, 0.5); }
+
+        .grid {
+            display: grid;
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .grid-2 { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+        .grid-3 { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+
+        .card {
+            background: #0A0A0A;
+            border: 2px solid rgba(0, 255, 65, 0.3);
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            transition: all 0.3s;
+        }
+
+        .card:hover {
+            border-color: #FF0040;
+            box-shadow: 0 0 20px rgba(255, 0, 64, 0.6);
+            transform: scale(1.03);
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s;
+            cursor: pointer;
+            border: none;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .btn-green {
+            background: #00FF41;
+            color: #000000;
+        }
+
+        .btn-green:hover {
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.6);
+            transform: scale(1.05);
+        }
+
+        .btn-red {
+            background: #FF0040;
+            color: #000000;
+        }
+
+        .btn-red:hover {
+            box-shadow: 0 0 20px rgba(255, 0, 64, 0.6);
+            transform: scale(1.05);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid #00FF41;
+            color: #00FF41;
+        }
+
+        .btn-outline:hover {
+            background: #00FF41;
+            color: #000000;
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.6);
+        }
+
+        .color-swatch {
+            height: 100px;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .green-bg { background: #00FF41; color: #000000; box-shadow: 0 0 20px rgba(0, 255, 65, 0.6); }
+        .red-bg { background: #FF0040; color: #000000; box-shadow: 0 0 20px rgba(255, 0, 64, 0.6); }
+        .black-bg { background: #000000; border: 2px solid #00FF41; }
+        .gray-bg { background: #E0E0E0; color: #000000; }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .badge-green {
+            background: rgba(0, 255, 65, 0.2);
+            border: 1px solid #00FF41;
+            color: #00FF41;
+            box-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
+        }
+
+        .badge-red {
+            background: rgba(255, 0, 64, 0.2);
+            border: 1px solid #FF0040;
+            color: #FF0040;
+            box-shadow: 0 0 10px rgba(255, 0, 64, 0.5);
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+        }
+
+        .alert-green {
+            background: #0A0A0A;
+            border-left: 4px solid #00FF41;
+            box-shadow: 0 0 15px rgba(0, 255, 65, 0.5);
+        }
+
+        .alert-red {
+            background: #0A0A0A;
+            border-left: 4px solid #FF0040;
+            box-shadow: 0 0 15px rgba(255, 0, 64, 0.5);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #1A1A1A;
+            border-radius: 9999px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(to right, #00FF41, #FF0040);
+            box-shadow: 0 0 15px rgba(0, 255, 65, 0.5);
+            width: 65%;
+            transition: width 0.5s;
+        }
+
+        @keyframes glow-pulse {
+            0%, 100% { box-shadow: 0 0 10px rgba(0, 255, 65, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(0, 255, 65, 0.8); }
+        }
+
+        @keyframes glow-pulse-red {
+            0%, 100% { box-shadow: 0 0 10px rgba(255, 0, 64, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(255, 0, 64, 0.8); }
+        }
+
+        .pulse-green {
+            animation: glow-pulse 2s ease-in-out infinite;
+        }
+
+        .pulse-red {
+            animation: glow-pulse-red 2s ease-in-out infinite;
+        }
+
+        .section {
+            margin: 3rem 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header style="text-align: center; margin-bottom: 3rem;">
+            <h1>Ghost<span class="red">Atlas</span></h1>
+            <p style="font-size: 1.25rem; margin-top: 1rem;">
+                Where the <span class="red" style="font-weight: 600;">paranormal</span> meets reality
+            </p>
+        </header>
+
+        <!-- Color Palette -->
+        <section class="section">
+            <h2>Color Palette</h2>
+            <div class="grid grid-3">
+                <div>
+                    <div class="color-swatch green-bg">Neon Green</div>
+                    <p style="text-align: center;">#00FF41</p>
+                </div>
+                <div>
+                    <div class="color-swatch red-bg">Neon Red</div>
+                    <p style="text-align: center;">#FF0040</p>
+                </div>
+                <div>
+                    <div class="color-swatch black-bg">Black</div>
+                    <p style="text-align: center;">#000000</p>
+                </div>
+                <div>
+                    <div class="color-swatch gray-bg">Gray</div>
+                    <p style="text-align: center;">#E0E0E0</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Buttons -->
+        <section class="section">
+            <h2>Buttons</h2>
+            <div style="display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 1rem;">
+                <button class="btn btn-green">Primary (Green)</button>
+                <button class="btn btn-red">Neon Red</button>
+                <button class="btn btn-outline">Outline</button>
+            </div>
+        </section>
+
+        <!-- Cards -->
+        <section class="section">
+            <h2>Interactive Cards</h2>
+            <p style="margin-bottom: 1rem;">Hover over cards to see red glow effect</p>
+            <div class="grid grid-2">
+                <div class="card">
+                    <h3>Haunted Mansion</h3>
+                    <p style="color: #FF0040; font-weight: 600; margin-bottom: 0.5rem;">John Doe</p>
+                    <p>I saw a ghostly figure in the old mansion. It was terrifying but fascinating at the same time...</p>
+                    <div style="margin-top: 1rem;">
+                        <span class="badge badge-green">Approved</span>
+                        <span class="badge badge-red">Featured</span>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>Cemetery Encounter</h3>
+                    <p style="color: #FF0040; font-weight: 600; margin-bottom: 0.5rem;">Jane Smith</p>
+                    <p>Late at night, I heard whispers coming from the old cemetery. The air felt cold and heavy...</p>
+                    <div style="margin-top: 1rem;">
+                        <span class="badge badge-green">Approved</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Alerts -->
+        <section class="section">
+            <h2>Alerts & Notifications</h2>
+            <div class="alert alert-green">
+                <strong style="color: #00FF41;">✓ Success!</strong>
+                <p style="margin-top: 0.5rem;">Your encounter has been submitted successfully.</p>
+            </div>
+            <div class="alert alert-red">
+                <strong style="color: #FF0040;">⚠ Warning!</strong>
+                <p style="margin-top: 0.5rem;">This location has high paranormal activity.</p>
+            </div>
+        </section>
+
+        <!-- Progress Bar -->
+        <section class="section">
+            <h2>Progress Indicators</h2>
+            <div style="margin-top: 1rem;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <span>Enhancement Progress</span>
+                    <span style="color: #00FF41;">65%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Badges -->
+        <section class="section">
+            <h2>Badges & Tags</h2>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem;">
+                <span class="badge badge-green">Approved</span>
+                <span class="badge badge-red">Featured</span>
+                <span class="badge badge-green">Verified</span>
+                <span class="badge badge-red">Hot</span>
+                <span class="badge badge-green">New</span>
+            </div>
+        </section>
+
+        <!-- Animations -->
+        <section class="section">
+            <h2>Glow Animations</h2>
+            <div class="grid grid-2">
+                <div class="card pulse-green" style="border-color: #00FF41;">
+                    <h3>Pulsing Green Glow</h3>
+                    <p>This card has an animated green glow effect</p>
+                </div>
+                <div class="card pulse-red" style="border-color: #FF0040;">
+                    <h3 class="red">Pulsing Red Glow</h3>
+                    <p>This card has an animated red glow effect</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Typography -->
+        <section class="section">
+            <h2>Typography Examples</h2>
+            <h1>Ghost<span class="red">Atlas</span> Heading 1</h1>
+            <h2>Paranormal <span class="red">Encounters</span> Heading 2</h2>
+            <h3>Spooky <span class="red">Stories</span> Heading 3</h3>
+            <p style="margin-top: 1rem;">
+                This is body text in the default gray color. It maintains good readability against the black background.
+                Keywords like <span class="red" style="font-weight: 600;">paranormal</span> and 
+                <span class="red" style="font-weight: 600;">encounter</span> are highlighted in red for emphasis.
+            </p>
+        </section>
+
+        <!-- Footer -->
+        <footer style="text-align: center; margin-top: 4rem; padding-top: 2rem; border-top: 2px solid rgba(0, 255, 65, 0.3);">
+            <p style="color: #666;">GhostAtlas Theme Preview • Neon Green + Red</p>
+            <p style="color: #666; margin-top: 0.5rem;">Open in browser to see interactive effects</p>
+        </footer>
+    </div>
+</body>
+</html>

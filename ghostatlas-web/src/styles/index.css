@@ -1,0 +1,523 @@
+@import 'tailwindcss';
+
+/* Import Creepster font from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Creepster&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* ============================================
+   CSS Custom Properties (Design Tokens)
+   ============================================ */
+:root {
+  /* Colors */
+  --color-ghost-black: #000000;
+  --color-ghost-near-black: #0a0a0a;
+  --color-ghost-green: #00ff41;
+  --color-ghost-red: #ff0040;
+  --color-ghost-red-dark: #cc0033;
+  --color-ghost-gray: #e0e0e0;
+  --color-ghost-white: #ffffff;
+  --color-ghost-dark-gray: #1a1a1a;
+  --color-ghost-medium-gray: #333333;
+
+  /* Typography */
+  --font-family-creepster: 'Creepster', cursive;
+  --font-family-sans: 'Inter', system-ui, sans-serif;
+  
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  --font-size-4xl: 2.25rem;
+  --font-size-5xl: 3rem;
+
+  /* Spacing */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
+  --spacing-3xl: 4rem;
+
+  /* Shadows */
+  --shadow-green-glow: 0 0 10px rgba(0, 255, 65, 0.5);
+  --shadow-green-glow-md: 0 0 15px rgba(0, 255, 65, 0.5);
+  --shadow-green-glow-lg: 0 0 20px rgba(0, 255, 65, 0.6);
+  --shadow-green-glow-xl: 0 0 30px rgba(0, 255, 65, 0.7);
+  --shadow-red-glow: 0 0 10px rgba(255, 0, 64, 0.5);
+  --shadow-red-glow-md: 0 0 15px rgba(255, 0, 64, 0.5);
+  --shadow-red-glow-lg: 0 0 20px rgba(255, 0, 64, 0.6);
+  --shadow-red-glow-xl: 0 0 30px rgba(255, 0, 64, 0.7);
+  --shadow-vignette: inset 0 0 100px rgba(0, 0, 0, 0.8);
+  --shadow-vignette-lg: inset 0 0 150px rgba(0, 0, 0, 0.9);
+
+  /* Animations */
+  --transition-fast: 150ms ease-in-out;
+  --transition-base: 250ms ease-in-out;
+  --transition-slow: 400ms ease-in-out;
+  
+  --animate-pulse-green: pulse-green 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-fade-in: fade-in 0.3s ease-in-out;
+  --animate-slide-up: slide-up 0.4s ease-out;
+  --animate-glow-pulse: glow-pulse 2s ease-in-out infinite;
+
+  /* Border Radius */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-full: 9999px;
+}
+
+/* ============================================
+   Global Styles
+   ============================================ */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-ghost-black);
+  color: var(--color-ghost-gray);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-base);
+  line-height: 1.6;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ============================================
+   Typography
+   ============================================ */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-family-creepster);
+  color: var(--color-ghost-green);
+  margin: 0;
+  line-height: 1.2;
+}
+
+h1 {
+  font-size: var(--font-size-5xl);
+}
+
+h2 {
+  font-size: var(--font-size-4xl);
+}
+
+h3 {
+  font-size: var(--font-size-3xl);
+}
+
+h4 {
+  font-size: var(--font-size-2xl);
+}
+
+h5 {
+  font-size: var(--font-size-xl);
+}
+
+h6 {
+  font-size: var(--font-size-lg);
+}
+
+p {
+  margin: 0 0 var(--spacing-md) 0;
+}
+
+a {
+  color: var(--color-ghost-green);
+  text-decoration: none;
+  transition: all var(--transition-fast);
+}
+
+a:hover {
+  text-shadow: var(--shadow-green-glow);
+}
+
+/* ============================================
+   Custom Scrollbar
+   ============================================ */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: var(--color-ghost-near-black);
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--color-ghost-green);
+  border-radius: var(--radius-sm);
+  transition: background-color var(--transition-fast);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-ghost-green);
+  opacity: 0.8;
+  box-shadow: var(--shadow-green-glow);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-ghost-green) var(--color-ghost-near-black);
+}
+
+/* ============================================
+   Selection Styles
+   ============================================ */
+::selection {
+  background-color: var(--color-ghost-green);
+  color: var(--color-ghost-black);
+}
+
+::-moz-selection {
+  background-color: var(--color-ghost-green);
+  color: var(--color-ghost-black);
+}
+
+/* ============================================
+   Focus Styles
+   ============================================ */
+*:focus {
+  outline: none;
+}
+
+*:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--color-ghost-black),
+    0 0 0 4px var(--color-ghost-green);
+  transition: box-shadow var(--transition-fast);
+}
+
+/* ============================================
+   Utility Classes - Green Glow Effects
+   ============================================ */
+.text-glow {
+  text-shadow: var(--shadow-green-glow);
+}
+
+.text-glow-md {
+  text-shadow: var(--shadow-green-glow-md);
+}
+
+.text-glow-lg {
+  text-shadow: var(--shadow-green-glow-lg);
+}
+
+.text-glow-xl {
+  text-shadow: var(--shadow-green-glow-xl);
+}
+
+.box-glow {
+  box-shadow: var(--shadow-green-glow);
+}
+
+.box-glow-md {
+  box-shadow: var(--shadow-green-glow-md);
+}
+
+.box-glow-lg {
+  box-shadow: var(--shadow-green-glow-lg);
+}
+
+.box-glow-xl {
+  box-shadow: var(--shadow-green-glow-xl);
+}
+
+.glow-on-hover {
+  transition: box-shadow var(--transition-base);
+}
+
+.glow-on-hover:hover {
+  box-shadow: var(--shadow-green-glow-lg);
+}
+
+/* Red Glow Effects */
+.text-glow-red {
+  text-shadow: var(--shadow-red-glow);
+}
+
+.text-glow-red-md {
+  text-shadow: var(--shadow-red-glow-md);
+}
+
+.text-glow-red-lg {
+  text-shadow: var(--shadow-red-glow-lg);
+}
+
+.text-glow-red-xl {
+  text-shadow: var(--shadow-red-glow-xl);
+}
+
+.box-glow-red {
+  box-shadow: var(--shadow-red-glow);
+}
+
+.box-glow-red-md {
+  box-shadow: var(--shadow-red-glow-md);
+}
+
+.box-glow-red-lg {
+  box-shadow: var(--shadow-red-glow-lg);
+}
+
+.box-glow-red-xl {
+  box-shadow: var(--shadow-red-glow-xl);
+}
+
+/* ============================================
+   Utility Classes - Vignette Effects
+   ============================================ */
+.vignette {
+  position: relative;
+}
+
+.vignette::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  box-shadow: var(--shadow-vignette);
+  border-radius: inherit;
+}
+
+.vignette-lg {
+  position: relative;
+}
+
+.vignette-lg::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  box-shadow: var(--shadow-vignette-lg);
+  border-radius: inherit;
+}
+
+/* ============================================
+   Utility Classes - Background Effects
+   ============================================ */
+.fog-effect {
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(10, 10, 10, 0.3) 50%,
+    rgba(0, 0, 0, 0) 100%
+  );
+}
+
+.gradient-radial {
+  background: radial-gradient(
+    circle at center,
+    rgba(0, 255, 65, 0.1) 0%,
+    rgba(0, 0, 0, 0) 70%
+  );
+}
+
+.gradient-green-fade {
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 255, 65, 0.05) 0%,
+    rgba(0, 0, 0, 0) 100%
+  );
+}
+
+/* ============================================
+   Utility Classes - Borders
+   ============================================ */
+.border-glow {
+  border: 1px solid var(--color-ghost-green);
+  box-shadow: var(--shadow-green-glow);
+}
+
+.border-glow-lg {
+  border: 2px solid var(--color-ghost-green);
+  box-shadow: var(--shadow-green-glow-lg);
+}
+
+.border-glow-red {
+  border: 1px solid var(--color-ghost-red);
+  box-shadow: var(--shadow-red-glow);
+}
+
+.border-glow-red-lg {
+  border: 2px solid var(--color-ghost-red);
+  box-shadow: var(--shadow-red-glow-lg);
+}
+
+/* ============================================
+   Utility Classes - Animations
+   ============================================ */
+.animate-pulse-green {
+  animation: var(--animate-pulse-green);
+}
+
+.animate-fade-in {
+  animation: var(--animate-fade-in);
+}
+
+.animate-slide-up {
+  animation: var(--animate-slide-up);
+}
+
+.animate-glow-pulse {
+  animation: var(--animate-glow-pulse);
+}
+
+/* ============================================
+   Loading States
+   ============================================ */
+.loading-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-ghost-near-black) 25%,
+    var(--color-ghost-dark-gray) 50%,
+    var(--color-ghost-near-black) 75%
+  );
+  background-size: 200% 100%;
+  animation: loading-shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes loading-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Red glow pulse animation */
+@keyframes glow-pulse-red {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(255, 0, 64, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(255, 0, 64, 0.8);
+  }
+}
+
+.animate-glow-pulse-red {
+  animation: glow-pulse-red 2s ease-in-out infinite;
+}
+
+/* Dual glow animation (green and red) */
+@keyframes glow-pulse-dual {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(0, 255, 65, 0.5), 0 0 20px rgba(255, 0, 64, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(0, 255, 65, 0.3), 0 0 30px rgba(255, 0, 64, 0.6);
+  }
+}
+
+.animate-glow-pulse-dual {
+  animation: glow-pulse-dual 3s ease-in-out infinite;
+}
+
+/* Neon flicker effect */
+@keyframes neon-flicker {
+  0%, 100% {
+    opacity: 1;
+    text-shadow: 0 0 10px rgba(255, 0, 64, 0.8), 0 0 20px rgba(255, 0, 64, 0.5);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    opacity: 0.9;
+    text-shadow: 0 0 5px rgba(255, 0, 64, 0.6), 0 0 10px rgba(255, 0, 64, 0.3);
+  }
+  20%, 40%, 60%, 80% {
+    opacity: 1;
+    text-shadow: 0 0 15px rgba(255, 0, 64, 0.9), 0 0 25px rgba(255, 0, 64, 0.6);
+  }
+}
+
+.animate-neon-flicker {
+  animation: neon-flicker 4s ease-in-out infinite;
+}
+
+/* Hover glow transition utilities */
+.hover-glow-red {
+  transition: all 0.3s ease-in-out;
+}
+
+.hover-glow-red:hover {
+  box-shadow: 0 0 20px rgba(255, 0, 64, 0.6);
+  border-color: var(--color-ghost-red);
+}
+
+.hover-glow-dual {
+  transition: all 0.3s ease-in-out;
+}
+
+.hover-glow-dual:hover {
+  box-shadow: 0 0 15px rgba(0, 255, 65, 0.5), 0 0 25px rgba(255, 0, 64, 0.5);
+}
+
+/* ============================================
+   Accessibility
+   ============================================ */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Skip to content link */
+.skip-to-content {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--color-ghost-green);
+  color: var(--color-ghost-black);
+  padding: var(--spacing-md);
+  z-index: 100;
+  transition: top var(--transition-fast);
+}
+
+.skip-to-content:focus {
+  top: 0;
+}
+
+/* ============================================
+   Responsive Utilities
+   ============================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

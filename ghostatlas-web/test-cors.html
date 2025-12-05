@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CORS Test - GhostAtlas API</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #000;
+            color: #0f0;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .test {
+            background: #111;
+            border: 1px solid #0f0;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success { border-color: #0f0; }
+        .error { border-color: #f00; color: #f00; }
+        .pending { border-color: #ff0; color: #ff0; }
+        pre {
+            background: #000;
+            padding: 10px;
+            overflow-x: auto;
+            border: 1px solid #333;
+        }
+        button {
+            background: #0f0;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-family: monospace;
+            font-weight: bold;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0c0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 GhostAtlas API CORS Test</h1>
+    <p>Testing CORS configuration for: <code>https://yj3dszj0vh.execute-api.us-east-1.amazonaws.com/dev/api</code></p>
+    
+    <button onclick="testFetch()">Test with Fetch API</button>
+    <button onclick="testXHR()">Test with XMLHttpRequest</button>
+    <button onclick="testOptions()">Test OPTIONS Preflight</button>
+    <button onclick="clearResults()">Clear Results</button>
+
+    <div id="results"></div>
+
+    <script>
+        const API_BASE = 'https://yj3dszj0vh.execute-api.us-east-1.amazonaws.com/dev/api';
+        
+        function addResult(title, status, details) {
+            const div = document.createElement('div');
+            div.className = `test ${status}`;
+            div.innerHTML = `
+                <h3>${title}</h3>
+                <pre>${JSON.stringify(details, null, 2)}</pre>
+            `;
+            document.getElementById('results').appendChild(div);
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        async function testFetch() {
+            addResult('Fetch API Test', 'pending', { status: 'Starting...' });
+            
+            try {
+                const response = await fetch(`${API_BASE}/encounters?latitude=13.081084&longitude=77.559572&radius=100&limit=10`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                
+                addResult('Fetch API Test - SUCCESS', 'success', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    headers: {
+                        'access-control-allow-origin': response.headers.get('access-control-allow-origin'),
+                        'access-control-allow-methods': response.headers.get('access-control-allow-methods'),
+                        'access-control-allow-headers': response.headers.get('access-control-allow-headers'),
+                        'content-type': response.headers.get('content-type')
+                    },
+                    dataPreview: {
+                        count: data.count,
+                        encountersFound: data.encounters?.length || 0
+                    }
+                });
+            } catch (error) {
+                addResult('Fetch API Test - ERROR', 'error', {
+                    error: error.message,
+                    name: error.name,
+                    stack: error.stack
+                });
+            }
+        }
+
+        function testXHR() {
+            addResult('XMLHttpRequest Test', 'pending', { status: 'Starting...' });
+            
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', `${API_BASE}/encounters?latitude=13.081084&longitude=77.559572&radius=100&limit=10`);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.setRequestHeader('Accept', 'application/json');
+            
+            xhr.onload = function() {
+                try {
+                    const data = JSON.parse(xhr.responseText);
+                    addResult('XMLHttpRequest Test - SUCCESS', 'success', {
+                        status: xhr.status,
+                        statusText: xhr.statusText,
+                        headers: {
+                            'access-control-allow-origin': xhr.getResponseHeader('access-control-allow-origin'),
+                            'access-control-allow-methods': xhr.getResponseHeader('access-control-allow-methods'),
+                            'access-control-allow-headers': xhr.getResponseHeader('access-control-allow-headers'),
+                            'content-type': xhr.getResponseHeader('content-type')
+                        },
+                        dataPreview: {
+                            count: data.count,
+                            encountersFound: data.encounters?.length || 0
+                        }
+                    });
+                } catch (error) {
+                    addResult('XMLHttpRequest Test - ERROR', 'error', {
+                        error: error.message,
+                        responseText: xhr.responseText
+                    });
+                }
+            };
+            
+            xhr.onerror = function() {
+                addResult('XMLHttpRequest Test - ERROR', 'error', {
+                    error: 'Network error or CORS blocked',
+                    status: xhr.status,
+                    statusText: xhr.statusText
+                });
+            };
+            
+            xhr.send();
+        }
+
+        async function testOptions() {
+            addResult('OPTIONS Preflight Test', 'pending', { status: 'Starting...' });
+            
+            try {
+                const response = await fetch(`${API_BASE}/encounters`, {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Origin': window.location.origin,
+                        'Access-Control-Request-Method': 'GET',
+                        'Access-Control-Request-Headers': 'content-type'
+                    }
+                });
+
+                addResult('OPTIONS Preflight Test - SUCCESS', 'success', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    headers: {
+                        'access-control-allow-origin': response.headers.get('access-control-allow-origin'),
+                        'access-control-allow-methods': response.headers.get('access-control-allow-methods'),
+                        'access-control-allow-headers': response.headers.get('access-control-allow-headers'),
+                        'access-control-max-age': response.headers.get('access-control-max-age')
+                    }
+                });
+            } catch (error) {
+                addResult('OPTIONS Preflight Test - ERROR', 'error', {
+                    error: error.message,
+                    name: error.name
+                });
+            }
+        }
+
+        // Auto-run tests on load
+        window.addEventListener('load', () => {
+            console.log('Running automatic CORS tests...');
+            setTimeout(testFetch, 500);
+            setTimeout(testOptions, 1500);
+        });
+    </script>
+</body>
+</html>
